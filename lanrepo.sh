@@ -34,9 +34,12 @@ echo -e "\033[0;34m[Task]\033[0m Mengunduh paket-paket LAMP dan dependensinya...
 # Daftar paket LAMP
 PACKAGES="apache2 mariadb-server php php-mysql libapache2-mod-php php-cli php-curl php-gd php-mbstring php-xml php-zip"
 
+# Mengambil semua dependensi paket utama
+ALL_PACKAGES=$(apt-cache depends --recurse --no-recommends --no-suggests --no-conflicts --no-breaks --no-replaces --no-enhances $PACKAGES | grep "^\w" | sort -u)
+
 # Unduh ulang paket, meskipun sudah terinstal
 apt update
-apt install -d --reinstall -y $PACKAGES
+apt install -d --reinstall -y $ALL_PACKAGES
 
 echo ""
 echo -e "\033[0;34m[Task]\033[0m Memindahkan paket terbaru ke repository..."
