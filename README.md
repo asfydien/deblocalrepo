@@ -4,13 +4,12 @@ Script ini digunakan untuk membuat sebuah CT Debian di Proxmox supaya dapat digu
 ## Tahapan
 
 1. Buat sebuah CT dengan template OS Debian
-2. Install curl
-3. Download script, lalu beri ijin eksekusi
+2. Download script, lalu beri ijin eksekusi
     ```shell
-    curl -o lanrepo.sh https://raw.githubusercontent.com/asfydien/deblocalrepo/refs/heads/main/lanrepo.sh
+    wget https://raw.githubusercontent.com/asfydien/deblocalrepo/refs/heads/main/lanrepo.sh
     chmod +x lanrepo.sh
     ```
-4. Jalankan
+3. Jalankan
     ```shell
     ./lanrepo.sh
     ```  
