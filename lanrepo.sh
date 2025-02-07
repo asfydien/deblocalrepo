@@ -21,14 +21,12 @@ REPO_DIR="/var/www/html/repo"
 CACHE_DIR="/var/cache/apt/archives"
 
 echo ""
-echo -e "\033[0;34m[Task]\033[0m Menghapus paket lama di repository..."
-rm -rf "$REPO_DIR"
+echo -e "\033[0;34m[Task]\033[0m Membuat direktori repository jika belum ada..."
 mkdir -p "$REPO_DIR"
 chmod -R 755 "$REPO_DIR"
 
 echo ""
-echo -e "\033[0;34m[Task]\033[0m Menghapus cache lama dan menyiapkan direktori baru..."
-rm -rf "$CACHE_DIR"
+echo -e "\033[0;34m[Task]\033[0m Memastikan direktori cache tersedia..."
 mkdir -p "$CACHE_DIR/partial"
 
 echo ""
@@ -36,9 +34,9 @@ echo -e "\033[0;34m[Task]\033[0m Mengunduh paket-paket LAMP dan dependensinya...
 # Daftar paket LAMP
 PACKAGES="apache2 mariadb-server php php-mysql libapache2-mod-php php-cli php-curl php-gd php-mbstring php-xml php-zip"
 
-# Unduh paket tanpa menginstalnya
+# Unduh ulang paket, meskipun sudah terinstal
 apt update
-apt install -d -y $PACKAGES
+apt install -d --reinstall -y $PACKAGES
 
 echo ""
 echo -e "\033[0;34m[Task]\033[0m Memindahkan paket terbaru ke repository..."
