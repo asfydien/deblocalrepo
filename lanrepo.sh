@@ -46,7 +46,7 @@ echo -e "\033[0;34m[Task]\033[0m Memindahkan paket terbaru ke repository..."
 mv *.deb "$REPO_DIR/"
 
 echo ""
-echo "\033[0;34m[Task]\033[0m Membuat ulang indeks repository..."
+echo -e "\033[0;34m[Task]\033[0m Membuat ulang indeks repository..."
 cd "$REPO_DIR"
 rm -f Packages.gz
 dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz
@@ -57,7 +57,7 @@ chown -R www-data:www-data "$REPO_DIR"
 chmod -R 755 "$REPO_DIR"
 
 echo ""
-echo "Repository lokal berhasil diperbarui!"
+echo -e "\033[0;34m[Info]\033[0m Repository lokal berhasil dibuat!"
 echo "Repository tersedia di: http://$REPO_IP/repo"
 echo ""
 echo "Untuk menggunakan repository ini di client, tambahkan baris berikut ke /etc/apt/sources.list:"
