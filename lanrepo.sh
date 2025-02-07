@@ -18,7 +18,7 @@ echo -e "\033[0;34m[Task]\033[0m Memastikan Apache dan alat pendukung terinstal.
 apt update && apt install -y apache2 apt-mirror dpkg-dev
 
 REPO_DIR="/var/www/html/repo"
-CACHE_DIR="/repo-cache"
+CACHE_DIR="/var/cache/apt/archives"
 
 echo ""
 echo -e "\033[0;34m[Task]\033[0m Menghapus paket lama di repository..."
@@ -29,21 +29,20 @@ chmod -R 755 "$REPO_DIR"
 echo ""
 echo -e "\033[0;34m[Task]\033[0m Menghapus cache lama dan menyiapkan direktori baru..."
 rm -rf "$CACHE_DIR"
-mkdir -p "$CACHE_DIR"
+mkdir -p "$CACHE_DIR/partial"
 
 echo ""
 echo -e "\033[0;34m[Task]\033[0m Mengunduh paket-paket LAMP dan dependensinya..."
-cd "$CACHE_DIR"
-
 # Daftar paket LAMP
 PACKAGES="apache2 mariadb-server php php-mysql libapache2-mod-php php-cli php-curl php-gd php-mbstring php-xml php-zip"
 
-# Mengunduh semua paket beserta dependensinya
-apt download $PACKAGES
+# Unduh paket tanpa menginstalnya
+apt update
+apt install -d -y $PACKAGES
 
 echo ""
 echo -e "\033[0;34m[Task]\033[0m Memindahkan paket terbaru ke repository..."
-mv *.deb "$REPO_DIR/"
+mv "$CACHE_DIR"/*.deb "$REPO_DIR/"
 
 echo ""
 echo -e "\033[0;34m[Task]\033[0m Membuat ulang indeks repository..."
@@ -61,6 +60,7 @@ echo -e "\033[0;34m[Info]\033[0m Repository lokal berhasil dibuat!"
 echo "Repository tersedia di: http://$REPO_IP/repo"
 echo ""
 echo "Untuk menggunakan repository ini di client, tambahkan baris berikut ke /etc/apt/sources.list:"
+echo ""
 echo -e "\033[0;32mdeb [trusted=yes] http://$REPO_IP/repo ./\033[0m"
 echo ""
 echo "Kemudian jalankan: apt update"
