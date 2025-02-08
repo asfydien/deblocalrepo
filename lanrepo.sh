@@ -7,7 +7,7 @@ echo 'APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/01keep-cache
 
 # Lakukan update, dan download semua update-an
 echo -e "\033[0;34m[Task]\033[0m Update sistem..." 
-apt update -y && upgrade -y
+apt update -y && apt upgrade -y
 apt upgrade --download-only
 
 echo -e "\033[0;34m[Task]\033[0m aptitude..." 
@@ -78,7 +78,7 @@ aptitude install -d -y ufw
 
 echo -e "\033[0;34m[Task]\033[0m Persiapan membuat repository..." 
 # Instal semua alat yang dibutuhkan
-apt install apache2 dpkg-dev
+apt install -y apache2 dpkg-dev
 
 echo -e "\033[0;34m[Task]\033[0m Menyalin semua cache..." 
 mkdir -p /var/www/html/repo
