@@ -1,5 +1,5 @@
 ## Tujuan
-Script ini digunakan untuk membuat sebuah CT Debian di Proxmox supaya dapat digunakan sebagai repositori lokal dalam jaringan LAN
+Idenya script ini digunakan untuk membuat sebuah CT Debian 12 di Proxmox supaya dapat digunakan sebagai repositori lokal dalam jaringan LAN, masih banyak masalah dependensi!
 
 ## Tahapan
 
