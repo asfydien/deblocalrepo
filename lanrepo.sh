@@ -95,16 +95,6 @@ cd /var/www/html/repo
 dpkg-scanpackages -m . > Packages
 dpkg-scanpackages -m . | gzip > Packages.gz
 
-# Buat file Release yang berisi informasi repository
-cat > Release <<EOF
-Origin: TJKT Kahiyan Repository
-Label: TJKT Kahiyan Repository
-Codename: $(lsb_release -cs)
-Architectures: amd64 i386
-Components: main
-Description: Lokal repositori untuk Lab. TJKT Kahiyan
-EOF
-
 # Berikan izin yang sesuai pada direktori repository
 chown -R www-data:www-data /var/www/html/repo
 chmod -R 755 /var/www/html/repo
