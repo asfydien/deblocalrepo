@@ -95,6 +95,16 @@ cd /var/www/html/repo
 dpkg-scanpackages -m . > Packages
 dpkg-scanpackages -m . | gzip > Packages.gz
 
+# Buat file Release yang berisi informasi repository
+cat > Release <<EOF
+Origin: TJKT Kahiyan Repository
+Label: TJKT Kahiyan Repository
+Codename: $(lsb_release -cs)
+Architectures: amd64 i386
+Components: main
+Description: Lokal repositori untuk Lab. TJKT Kahiyan
+EOF
+
 # Berikan izin yang sesuai pada direktori repository
 chown -R www-data:www-data /var/www/html/repo
 chmod -R 755 /var/www/html/repo
@@ -106,5 +116,5 @@ echo -e "\033[0;34m[Task]\033[0m Selesai..."
 echo -e ""
 echo -e "Tambahkan baris berikut ke /etc/apt/sources.list"
 echo -e ""
-echo -e "   deb [trusted=yes] http://$IP_ADDRESS/local-repo/ ./"
+echo -e "\033[0;34m   deb [trusted=yes] http://$IP_ADDRESS/repo/ ./ \033[0m"
 echo -e ""
