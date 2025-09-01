@@ -19,7 +19,7 @@ ISO_DIR="/root/repo-iso"
 WEB_DIR="/var/www/html"
 
 # Label ISO agar dikenali oleh `apt-cdrom add`
-ISO_LABEL="Debian12_Repo"
+ISO_LABEL="Debian13_Repo"
 
 echo -e "\033[0;34m[Task]\033[0m Memeriksa apakah genisoimage sudah terinstal..."
 if ! command -v genisoimage &> /dev/null; then
@@ -46,7 +46,7 @@ dpkg-scanpackages pool/main /dev/null | gzip -9c > dists/stable/main/binary-amd6
 echo -e "\033[0;34m[Task]\033[0m Membuat file Release..."
 cat > dists/stable/Release <<EOF
 Origin: Debian
-Label: DEB13_KAHIANG
+Label: Debian13_Repo
 Suite: stable
 Codename: bookworm
 Architectures: amd64
