@@ -7,7 +7,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Nama ISO yang akan dibuat
-ISO_NAME="debian12-repo.iso"
+ISO_NAME="repo-deb13-kahiang.iso"
 
 # Direktori repository lokal yang berisi file .deb
 REPO_DIR="/var/www/html/repo"
@@ -21,29 +21,29 @@ WEB_DIR="/var/www/html"
 # Label ISO agar dikenali oleh `apt-cdrom add`
 ISO_LABEL="Debian12_Repo"
 
-echo "🔎 Memeriksa apakah genisoimage sudah terinstal..."
+echo -e "\033[0;34m[Task]\033[0m Memeriksa apakah genisoimage sudah terinstal..."
 if ! command -v genisoimage &> /dev/null; then
     echo "📦 Menginstal genisoimage..."
     apt update && apt install -y genisoimage
 fi
 
-echo "🔄 Membersihkan direktori kerja..."
+echo -e "\033[0;34m[Task]\033[0m Membersihkan direktori kerja..."
 rm -rf "$ISO_DIR"
 mkdir -p "$ISO_DIR"/{dists/stable/main/binary-amd64,pool/main}
 
-echo "📦 Menyalin paket ke struktur repository..."
+echo -e "\033[0;34m[Task]\033[0m Menyalin paket ke struktur repository..."
 if [ -d "$REPO_DIR" ] && [ -n "$(ls -A "$REPO_DIR" 2>/dev/null)" ]; then
     cp "$REPO_DIR"/*.deb "$ISO_DIR/pool/main/"
 else
-    echo "⚠️ Repository lokal kosong atau tidak ditemukan di $REPO_DIR!"
+    echo -e "\033[0;34m[Task]\033[0m Repository lokal kosong atau tidak ditemukan di $REPO_DIR!"
     exit 1
 fi
 
-echo "📝 Membuat daftar paket..."
+echo -e "\033[0;34m[Task]\033[0m Membuat daftar paket..."
 cd "$ISO_DIR"
 dpkg-scanpackages pool/main /dev/null | gzip -9c > dists/stable/main/binary-amd64/Packages.gz
 
-echo "📄 Membuat file Release..."
+echo -e "\033[0;34m[Task]\033[0m Membuat file Release..."
 cat > dists/stable/Release <<EOF
 Origin: Debian
 Label: DEB13_KAHIANG
@@ -54,23 +54,23 @@ Components: main
 Description: Debian 13 Local Repository (Kahiang)
 EOF
 
-echo "📀 Membuat file ISO: $ISO_NAME..."
+echo -e "\033[0;34m[Task]\033[0m Membuat file ISO: $ISO_NAME..."
 genisoimage -o "/root/$ISO_NAME" -J -r -V "$ISO_LABEL" "$ISO_DIR"
 
 # Periksa apakah file ISO berhasil dibuat
 if [ ! -f "/root/$ISO_NAME" ]; then
-    echo "❌ Pembuatan ISO gagal! Periksa apakah genisoimage berfungsi dengan benar."
+    echo -e "\033[0;34m[Error]\033[0m Pembuatan ISO gagal! Periksa apakah genisoimage berfungsi dengan benar."
     exit 1
 fi
 
-echo "📂 Memindahkan ISO ke web server..."
+echo -e "\033[0;34m[Task]\033[0m Memindahkan ISO ke web server..."
 mv "/root/$ISO_NAME" "$WEB_DIR/"
 
-echo "🔑 Membuat checksum SHA256..."
+echo -e "\033[0;34m[Task]\033[0m Membuat checksum SHA256..."
 cd "$WEB_DIR"
 sha256sum "$ISO_NAME" > "$ISO_NAME.sha256"
 
-echo "🛠️ Mengatur izin file agar bisa diunduh..."
+echo -e "\033[0;34m[Task]\033[0m Mengatur izin file agar bisa diunduh..."
 chmod 644 "$WEB_DIR/$ISO_NAME" "$WEB_DIR/$ISO_NAME.sha256"
 chown www-data:www-data "$WEB_DIR/$ISO_NAME" "$WEB_DIR/$ISO_NAME.sha256"
 
