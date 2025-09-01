@@ -23,7 +23,7 @@ ISO_LABEL="Debian13_Repo"
 
 echo -e "\033[0;34m[Task]\033[0m Memeriksa apakah genisoimage sudah terinstal..."
 if ! command -v genisoimage &> /dev/null; then
-    echo "📦 Menginstal genisoimage..."
+    echo -e "\033[0;34m[Task]\033[0m Menginstal genisoimage..."
     apt update && apt install -y genisoimage
 fi
 
@@ -39,20 +39,23 @@ else
     exit 1
 fi
 
-echo -e "\033[0;34m[Task]\033[0m Membuat daftar paket..."
+echo -e "\033[0;34m[Task]\033[0m Membuat file Packages.gz..."
 cd "$ISO_DIR"
-dpkg-scanpackages pool/main /dev/null | gzip -9c > dists/stable/main/binary-amd64/Packages.gz
+dpkg-scanpackages --arch amd64 pool/main | gzip -9c > dists/stable/main/binary-amd64/Packages.gz
 
+# Pastikan semua file repository terdaftar dan checksumnya dibuat.
+# APT memerlukan file Release dan Release.gpg yang valid.
 echo -e "\033[0;34m[Task]\033[0m Membuat file Release..."
-cat > dists/stable/Release <<EOF
-Origin: Debian
-Label: Debian13_Repo
-Suite: stable
-Codename: bookworm
-Architectures: amd64
-Components: main
-Description: Debian 13 Local Repository (Kahiang)
-EOF
+apt-ftparchive release dists/stable > dists/stable/Release
+
+# Menghasilkan file Release.gpg untuk verifikasi.
+if [ -f /root/.gnupg/secring.gpg ]; then
+    echo -e "\033[0;34m[Task]\033[0m Menandatangani file Release..."
+    gpg --default-key "your_signing_key_id" -abs -o dists/stable/Release.gpg dists/stable/Release
+else
+    echo -e "\033[0;34m[Warning]\033[0m Kunci GPG tidak ditemukan. File Release tidak ditandatangani."
+    echo "  Anda akan melihat peringatan '...can't be done securely' saat apt update."
+fi
 
 echo -e "\033[0;34m[Task]\033[0m Membuat file ISO: $ISO_NAME..."
 genisoimage -o "/root/$ISO_NAME" -J -r -V "$ISO_LABEL" "$ISO_DIR"
