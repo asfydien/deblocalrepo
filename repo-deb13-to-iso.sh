@@ -13,12 +13,10 @@ REPO_DIR="/var/www/html/repo"          # direktori deb
 ISO_DIR="/root/repo-iso"               # direktori kerja ISO
 WEB_DIR="/var/www/html"                # direktori web
 ISO_LABEL="Debian13_Repo"
-GPG_DIR="/root/repo-gpg"               # direktori penyimpanan key GPG
-KEY_NAME="Debian Local Repo"
 
 echo -e "\033[0;34m[Task]\033[0m Pastikan tools terinstal..."
 apt update
-apt install -y genisoimage apt-utils dpkg-dev gpg apache2
+apt install -y genisoimage dpkg-dev apache2
 
 # Buat direktori kerja
 echo -e "\033[0;34m[Task]\033[0m Membuat direktori kerja..."
@@ -33,52 +31,21 @@ else
     exit 1
 fi
 
-echo -e "\033[0;34m[Task]\033[0m Membuat metadata repo dengan apt-ftparchive..."
+echo -e "\033[0;34m[Task]\033[0m Membuat metadata repo..."
 cd "$ISO_DIR"
-
-# Packages
-apt-ftparchive packages pool/main > dists/stable/main/binary-amd64/Packages
+dpkg-scanpackages pool/main /dev/null > dists/stable/main/binary-amd64/Packages
 gzip -c dists/stable/main/binary-amd64/Packages > dists/stable/main/binary-amd64/Packages.gz
 
-# Release
-cat > dists/stable/Release.conf <<EOF
-APT::FTPArchive::Release::Origin "Debian";
-APT::FTPArchive::Release::Label "Debian13_Repo";
-APT::FTPArchive::Release::Suite "stable";
-APT::FTPArchive::Release::Codename "bookworm";
-APT::FTPArchive::Release::Architectures "amd64";
-APT::FTPArchive::Release::Components "main";
-APT::FTPArchive::Release::Description "Debian 13 Local Repository (Kahiang)";
+# Release sederhana (tanpa tanda tangan)
+cat > dists/stable/Release <<EOF
+Origin: Debian
+Label: Debian13_Repo
+Suite: stable
+Codename: bookworm
+Architectures: amd64
+Components: main
+Description: Debian 13 Local Repository (Kahiang)
 EOF
-
-apt-ftparchive -c dists/stable/Release.conf release dists/stable > dists/stable/Release
-
-echo -e "\033[0;34m[Task]\033[0m Membuat / mengecek kunci GPG..."
-mkdir -p "$GPG_DIR"
-if ! gpg --homedir "$GPG_DIR" --list-keys "$KEY_NAME" &>/dev/null; then
-    gpg --homedir "$GPG_DIR" --batch --gen-key <<EOF
-        %no-protection
-        Key-Type: RSA
-        Key-Length: 2048
-        Name-Real: $KEY_NAME
-        Expire-Date: 0
-        %commit
-EOF
-    echo -e "\033[0;32m[Info]\033[0m Kunci GPG baru dibuat."
-else
-    echo -e "\033[0;32m[Info]\033[0m Kunci GPG sudah ada, menggunakan yang lama."
-fi
-
-# Sign Release
-echo -e "\033[0;34m[Task]\033[0m Menandatangani Release dengan GPG..."
-gpg --homedir "$GPG_DIR" --yes -abs -o dists/stable/Release.gpg dists/stable/Release
-gpg --homedir "$GPG_DIR" --yes --clearsign -o dists/stable/InRelease dists/stable/Release
-
-# Export public key untuk siswa
-echo -e "\033[0;34m[Task]\033[0m Mengekspor public key..."
-gpg --homedir "$GPG_DIR" --armor --export "$KEY_NAME" > "$WEB_DIR/repo.gpg.key"
-chmod 644 "$WEB_DIR/repo.gpg.key"
-chown www-data:www-data "$WEB_DIR/repo.gpg.key"
 
 echo -e "\033[0;34m[Task]\033[0m Membuat file ISO..."
 genisoimage -o "/root/$ISO_NAME" -J -r -V "$ISO_LABEL" "$ISO_DIR"
@@ -103,17 +70,16 @@ fi
 
 # Info akhir
 IP_ADDR=$(hostname -I | awk '{print $1}')
-echo -e "\033[0;32m[Info]\033[0m Repository ISO & GPG key siap!"
+echo -e "\033[0;32m[Info]\033[0m Repository ISO siap!"
 echo -e "   ISO     : http://$IP_ADDR/$ISO_NAME"
 echo -e "   SHA256  : http://$IP_ADDR/$ISO_NAME.sha256"
-echo -e "   GPG KEY : http://$IP_ADDR/repo.gpg.key"
 
 echo -e "\n\033[0;34m[Petunjuk]\033[0m Cara pakai di client:"
-echo "1. Import GPG key:"
-echo "   wget http://$IP_ADDR/repo.gpg.key -O- | sudo apt-key add -"
-echo "2. Mount ISO:"
+echo "1. Mount ISO:"
 echo "   sudo mount -o loop /path/to/$ISO_NAME /mnt"
-echo "3. Tambahkan repository:"
-echo "   sudo apt-cdrom add"
+echo "2. Tambahkan repository:"
+echo "   sudo apt-cdrom add -d=/mnt"
+echo "3. Patch sources.list agar trusted:"
+echo "   sudo sed -i 's|^deb cdrom:|deb [trusted=yes] cdrom:|' /etc/apt/sources.list"
 echo "4. Update APT:"
 echo "   sudo apt update"
