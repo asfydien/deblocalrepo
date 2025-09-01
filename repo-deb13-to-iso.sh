@@ -1,15 +1,22 @@
 #!/bin/bash
 
-# Pastikan script dijalankan sebagai root
+# Kode warna ANSI
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Pastikan skrip dijalankan sebagai root
 if [[ $EUID -ne 0 ]]; then
-    echo "Script ini harus dijalankan sebagai root!"
+    echo -e "${RED}[ERROR]${NC} Skrip ini harus dijalankan sebagai root!"
     exit 1
 fi
 
 # Nama ISO yang akan dibuat
 ISO_NAME="repo-deb13-kahiang.iso"
 
-# Direktori repository lokal yang berisi file .deb
+# Direktori repositori lokal yang berisi file .deb
 REPO_DIR="/var/www/html/repo"
 
 # Direktori kerja untuk pembuatan ISO
@@ -19,84 +26,102 @@ ISO_DIR="/root/repo-iso"
 WEB_DIR="/var/www/html"
 
 # Label ISO agar dikenali oleh `apt-cdrom add`
-ISO_LABEL="Debian13_Repo"
+ISO_LABEL="Debian_13_Kahiang"
 
-echo -e "\033[0;34m[Task]\033[0m Memeriksa apakah genisoimage sudah terinstal..."
+# --- Bagian 1: Persiapan dan Verifikasi ---
+
+echo -e "${BLUE}[Task]${NC} Memeriksa dependensi..."
+# Cek genisoimage
 if ! command -v genisoimage &> /dev/null; then
-    echo -e "\033[0;34m[Task]\033[0m Menginstal genisoimage..."
+    echo -e "${YELLOW}[INFO]${NC} Menginstal genisoimage..."
     apt update && apt install -y genisoimage
 fi
+# Cek apt-utils (untuk apt-ftparchive)
+if ! command -v apt-ftparchive &> /dev/null; then
+    echo -e "${YELLOW}[INFO]${NC} Menginstal apt-utils..."
+    apt update && apt install -y apt-utils
+fi
+# Cek gnupg (opsional, untuk tanda tangan)
+if ! command -v gpg &> /dev/null; then
+    echo -e "${YELLOW}[INFO]${NC} Menginstal gnupg (opsional)..."
+    apt install -y gnupg
+fi
 
-echo -e "\033[0;34m[Task]\033[0m Membersihkan direktori kerja..."
+echo -e "${BLUE}[Task]${NC} Membersihkan direktori kerja..."
 rm -rf "$ISO_DIR"
 mkdir -p "$ISO_DIR"/{dists/stable/main/binary-amd64,pool/main}
 
-echo -e "\033[0;34m[Task]\033[0m Menyalin paket ke struktur repository..."
+echo -e "${BLUE}[Task]${NC} Menyalin paket ke struktur repositori..."
 if [ -d "$REPO_DIR" ] && [ -n "$(ls -A "$REPO_DIR" 2>/dev/null)" ]; then
     cp "$REPO_DIR"/*.deb "$ISO_DIR/pool/main/"
 else
-    echo -e "\033[0;34m[Task]\033[0m Repository lokal kosong atau tidak ditemukan di $REPO_DIR!"
-    exit 1
+    echo -e "${YELLOW}[WARNING]${NC} Repositori lokal kosong atau tidak ditemukan di $REPO_DIR!"
+    echo "  Skrip akan tetap berjalan, tetapi ISO tidak akan berisi paket."
 fi
 
-echo -e "\033[0;34m[Task]\033[0m Membuat file Packages.gz..."
+# --- Bagian 2: Pembuatan Repositori APT ---
+
 cd "$ISO_DIR"
+
+echo -e "${BLUE}[Task]${NC} Membuat file Packages.gz..."
 dpkg-scanpackages --arch amd64 pool/main | gzip -9c > dists/stable/main/binary-amd64/Packages.gz
 
-# Pastikan semua file repository terdaftar dan checksumnya dibuat.
-# APT memerlukan file Release dan Release.gpg yang valid.
-echo -e "\033[0;34m[Task]\033[0m Membuat file Release..."
+echo -e "${BLUE}[Task]${NC} Membuat file Release..."
 apt-ftparchive release dists/stable > dists/stable/Release
 
-# Menghasilkan file Release.gpg untuk verifikasi.
-if [ -f /root/.gnupg/secring.gpg ]; then
-    echo -e "\033[0;34m[Task]\033[0m Menandatangani file Release..."
-    gpg --default-key "your_signing_key_id" -abs -o dists/stable/Release.gpg dists/stable/Release
+# --- Bagian 3: Tanda Tangan GPG (Opsional, sangat disarankan) ---
+
+if [ -f /root/.gnupg/secring.gpg ] || [ -f /root/.gnupg/pubring.kbx ]; then
+    echo -e "${BLUE}[Task]${NC} Menandatangani Release file..."
+    
+    # PERHATIAN: Ganti "your_signing_key_id" dengan ID kunci GPG Anda
+    # Jika Anda tidak tahu ID-nya, jalankan `gpg --list-keys`
+    gpg --clearsign -o dists/stable/InRelease dists/stable/Release
+    gpg -abs -o dists/stable/Release.gpg dists/stable/Release
+    
+    echo -e "${GREEN}[SUKSES]${NC} Release file berhasil ditandatangani."
 else
-    echo -e "\033[0;34m[Warning]\033[0m Kunci GPG tidak ditemukan. File Release tidak ditandatangani."
-    echo "  Anda akan melihat peringatan '...can't be done securely' saat apt update."
+    echo -e "${YELLOW}[WARNING]${NC} Kunci GPG tidak ditemukan. Repositori tidak akan ditandatangani."
+    echo "  Anda akan mendapatkan peringatan '...can't be done securely' saat apt update."
 fi
 
-echo -e "\033[0;34m[Task]\033[0m Membuat file ISO: $ISO_NAME..."
+# --- Bagian 4: Pembuatan dan Penempatan ISO ---
+
+echo -e "${BLUE}[Task]${NC} Membuat file ISO: $ISO_NAME..."
 genisoimage -o "/root/$ISO_NAME" -J -r -V "$ISO_LABEL" "$ISO_DIR"
 
 # Periksa apakah file ISO berhasil dibuat
 if [ ! -f "/root/$ISO_NAME" ]; then
-    echo -e "\033[0;34m[Error]\033[0m Pembuatan ISO gagal! Periksa apakah genisoimage berfungsi dengan benar."
+    echo -e "${RED}[ERROR]${NC} Pembuatan ISO gagal! Periksa apakah genisoimage berfungsi dengan benar."
     exit 1
 fi
 
-echo -e "\033[0;34m[Task]\033[0m Memindahkan ISO ke web server..."
+echo -e "${BLUE}[Task]${NC} Memindahkan ISO ke web server..."
 mv "/root/$ISO_NAME" "$WEB_DIR/"
 
-echo -e "\033[0;34m[Task]\033[0m Membuat checksum SHA256..."
+echo -e "${BLUE}[Task]${NC} Membuat checksum SHA256..."
 cd "$WEB_DIR"
 sha256sum "$ISO_NAME" > "$ISO_NAME.sha256"
 
-echo -e "\033[0;34m[Task]\033[0m Mengatur izin file agar bisa diunduh..."
+echo -e "${BLUE}[Task]${NC} Mengatur izin file agar bisa diunduh..."
 chmod 644 "$WEB_DIR/$ISO_NAME" "$WEB_DIR/$ISO_NAME.sha256"
 chown www-data:www-data "$WEB_DIR/$ISO_NAME" "$WEB_DIR/$ISO_NAME.sha256"
 
-# Aktifkan listing direktori jika belum diaktifkan
-APACHE_CONF="/etc/apache2/apache2.conf"
-if ! grep -q "Options Indexes" "$APACHE_CONF"; then
-    echo "📄 Mengaktifkan list direktori di Apache..."
-    echo "<Directory /var/www/html>
-    Options Indexes FollowSymLinks
-    AllowOverride None
-    Require all granted
-</Directory>" >> "$APACHE_CONF"
-    systemctl restart apache2
-fi
+# --- Bagian 5: Instruksi Penggunaan ---
 
-# Tampilkan link unduhan
 IP_ADDR=$(hostname -I | awk '{print $1}')
-echo "✅ File ISO siap! Bisa diunduh di:"
-echo "🔗 http://$IP_ADDR/$ISO_NAME"
-echo "🔑 Checksum SHA256 tersedia di:"
-echo "🔗 http://$IP_ADDR/$ISO_NAME.sha256"
-
-echo "🚀 Untuk menggunakannya di client:"
-echo "1️⃣ Masukkan/mount ISO: sudo mount -o loop /path/to/$ISO_NAME /mnt"
-echo "2️⃣ Tambahkan repository: sudo apt-cdrom add"
-echo "3️⃣ Update APT: sudo apt update"
+echo ""
+echo "==========================================================="
+echo -e "${GREEN}[SUKSES]${NC} Pembuatan ISO Selesai!"
+echo "-----------------------------------------------------------"
+echo "File ISO siap! Bisa diunduh di:"
+echo "URL: http://$IP_ADDR/$ISO_NAME"
+echo "Checksum SHA256 tersedia di:"
+echo "URL: http://$IP_ADDR/$ISO_NAME.sha256"
+echo ""
+echo "Instruksi untuk menggunakannya di client:"
+echo "1. Unduh ISO dan pindahkan ke mesin client."
+echo "2. Mount ISO: sudo mount -o loop /path/ke/$ISO_NAME /mnt"
+echo "3. Tambahkan repositori: sudo apt-cdrom add"
+echo "4. Perbarui daftar paket: sudo apt update"
+echo "==========================================================="
