@@ -25,18 +25,18 @@ C_RESET="\033[0m"
 # ------------------------------------------------------------------------------
 # 2. DAFTAR PAKET PRAKTIKUM
 # ------------------------------------------------------------------------------
-PKGS_BASE="nginx gnupg2 wget curl dpkg-dev apt-utils psmisc"
+PKGS_BASE="nginx nginx-common gnupg2 wget curl dpkg-dev apt-utils psmisc"
 PKGS_DHCP="isc-dhcp-server kea-dhcp4-server chrony ntpsec"
 PKGS_FTP="proftpd-core vsftpd pure-ftpd"
 PKGS_REMOTE="freeradius freeradius-mysql freeradius-utils openssh-server openssh-client openssh-sftp-server sshpass"
-PKGS_FILE="samba smbclient winbind libpam-winbind libnss-winbind krb5-config samba-dsdb-modules samba-vfs-modules slapd ldap-utils wsdd2 nfs-kernel-server nfs-common"
-PKGS_WEB="apache2 php php8.4 perl perl-base perl-modules-5.40 libperl5.40 ruby openssl python3 certbot apache2-utils php-fpm php8.4-fpm php8.4-cli php8.4-readline php8.4-opcache nginx-extras libpam-krb5 lighttpd php-curl php8.4-curl php-gd php8.4-gd php-mbstring php8.4-mbstring php-xml php8.4-xml php-xmlrpc php8.4-xmlrpc php-soap php8.4-soap php-intl php8.4-intl php-zip php8.4-zip php-pgsql php8.4-pgsql php-mysql php8.4-mysql php-common php8.4-common php-enchant php8.4-enchant hunspell"
+PKGS_FILE="samba samba-common-bin samba-libs libldap2 libldb2 libndr6 attr python3-samba samba-ad-dc smbclient winbind libpam-winbind libnss-winbind krb5-config samba-dsdb-modules samba-vfs-modules slapd ldap-utils wsdd2 nfs-kernel-server nfs-common"
+PKGS_WEB="apache2 libaprutil1-ldap libbrotli1 libcurl4t64 libldap2 libnghttp3-9 librtmp1 libssh2-1t64 libxslt1.1 libgcrypt20 libgpg-error0 php php8.4 perl perl-base perl-modules-5.40 libperl5.40 ruby openssl python3 certbot apache2-utils php-fpm php8.4-fpm php8.4-cli php8.4-readline php8.4-opcache nginx-extras libpam-krb5 lighttpd php-curl php8.4-curl php-gd php8.4-gd php-mbstring php8.4-mbstring php-xml php8.4-xml php-xmlrpc php8.4-xmlrpc php-soap php8.4-soap php-intl php8.4-intl php-zip php8.4-zip php-pgsql php8.4-pgsql php-mysql php8.4-mysql php-common php8.4-common php-enchant php8.4-enchant hunspell"
 PKGS_DNS="bind9 bind9-utils bind9-dnsutils dnsmasq resolvconf"
-PKGS_DB="mariadb-server mariadb-client phpmyadmin postgresql"
+PKGS_DB="mariadb-server mariadb-client mariadb-common mariadb-server-core mariadb-client-core libdbi-perl libhtml-template-perl pv mariadb-plugin-provider-bzip2 mariadb-plugin-provider-lz4 mariadb-plugin-provider-lzma mariadb-plugin-provider-lzo mariadb-plugin-provider-snappy mysql-common libmariadb3 phpmyadmin postgresql"
 PKGS_MAIL="postfix sasl2-bin dovecot-core dovecot-pop3d dovecot-imapd roundcube courier-imap courier-pop clamav-daemon amavisd-new mailutils swaks"
 PKGS_CPANEL="cockpit libnet-ssleay-perl libauthen-pam-perl libpam-runtime libio-pty-perl apt-show-versions shared-mime-info unzip tar libglib2.0-0 libglib2.0-0t64 libglib2.0-data libxml2 perl-openssl-defaults libatomic1 xdg-user-dirs"
 PKGS_VPN="pptpd openvpn libnss3-dev libnspr4-dev pkg-config libpam0g-dev libcap-ng-dev libcap-ng-utils libselinux1-dev libcurl4-openssl-dev flex bison gcc make libnss3-tools libevent-dev libsystemd-dev uuid-runtime ppp xl2tpd fail2ban"
-PKGS_MONITOR="sysstat cacti snmpd htop"
+PKGS_MONITOR="sysstat cacti snmp snmpd rrdtool librrd8 htop"
 PKGS_NET="net-tools iptables iptables-persistent iproute2 nftables frr haproxy gawk grep sed squid zip ufw tcpdump traceroute nmap iperf3 telnet rsync acl sudo bash-completion vim nano"
 
 ALL_PACKAGES="$PKGS_BASE $PKGS_DHCP $PKGS_FTP $PKGS_REMOTE $PKGS_FILE $PKGS_WEB $PKGS_DNS $PKGS_DB $PKGS_MAIL $PKGS_CPANEL $PKGS_VPN $PKGS_MONITOR $PKGS_NET"
@@ -64,13 +64,19 @@ done
 apt-get install -y nginx gnupg2 dpkg-dev apt-utils curl wget
 
 # ------------------------------------------------------------------------------
-# 4. INTEGRASI WEBMIN & USERMIN
+# 4. INTEGRASI WEBMIN & USERMIN (Terpisah)
 # ------------------------------------------------------------------------------
-echo -e "$C_TASK Menambahkan Webmin & Usermin dan menarik dependensinya secara otomatis..."
+echo -e "$C_TASK Menambahkan Webmin & Usermin..."
 cd /tmp
+
 wget -qO webmin.deb https://webmin.com/download/deb/webmin-current.deb
 wget -qO usermin.deb https://webmin.com/download/deb/usermin-current.deb
-apt-get install -y --download-only ./webmin.deb ./usermin.deb
+
+echo -e "$C_INFO Membedah dan mengunduh dependensi Webmin..."
+apt-get install -y --allow-downgrades --download-only ./webmin.deb
+
+echo -e "$C_INFO Membedah dan mengunduh dependensi Usermin..."
+apt-get install -y --allow-downgrades --download-only ./usermin.deb
 
 # ------------------------------------------------------------------------------
 # 5. KONFIGURASI KEAMANAN (GPG SIGNATURE)
@@ -108,7 +114,6 @@ for file in *.deb; do
     cp -u "$file" "$REPO_DIR/$new_name"
 done
 
-# Pindahkan juga file Webmin dan Usermin ke dalam Repositori
 cp -u /tmp/webmin.deb "$REPO_DIR/webmin.deb"
 cp -u /tmp/usermin.deb "$REPO_DIR/usermin.deb"
 
@@ -155,12 +160,16 @@ cat > "$REPO_DIR/index.html" <<EOF
             <p><strong>Perhatian Siswa/i:</strong> <em>Copy</em> kode di dalam kotak hitam di bawah ini secara berurutan, lalu <em>paste</em> di terminal LXC Debian 13 kalian.</p>
         </div>
 
-        <h3>1. Unduh GPG Key Keamanan Repository</h3>
+        <h3>1. Matikan Repository Internet (Wajib Mode Offline)</h3>
+        <pre><code>mv /etc/apt/sources.list /etc/apt/sources.list.backup 2&gt;/dev/null
+mv /etc/apt/sources.list.d/debian.sources /etc/apt/sources.list.d/debian.sources.backup 2&gt;/dev/null</code></pre>
+
+        <h3>2. Unduh GPG Key Keamanan Repository Lokal</h3>
         <pre><code>mkdir -p /etc/apt/keyrings
 wget -qO /etc/apt/keyrings/repo-lokal.asc http://$IP_ADDRESS/repo/repo-key.asc
 chmod 644 /etc/apt/keyrings/repo-lokal.asc</code></pre>
 
-        <h3>2. Daftarkan Alamat Repository</h3>
+        <h3>3. Daftarkan Alamat Repository Lokal</h3>
         <pre><code>cat &lt;&lt; 'INNER_EOF' > /etc/apt/sources.list.d/lokal.sources
 Types: deb
 URIs: http://$IP_ADDRESS/repo
@@ -168,11 +177,13 @@ Suites: ./
 Signed-By: /etc/apt/keyrings/repo-lokal.asc
 INNER_EOF</code></pre>
 
-        <h3>3. Lakukan Update & Mulai Praktikum!</h3>
+        <h3>4. Lakukan Update & Mulai Praktikum!</h3>
         <pre><code>apt update</code></pre>
 
-        <h3>💡 Info Ekstra</h3>
-        <p>Aplikasi <strong>Webmin</strong> dan <strong>Usermin</strong> sudah tersedia di dalam repositori lokal ini. Kalian cukup mengetikkan perintah: <code>apt install webmin usermin</code> untuk menginstalnya.</p>
+        <h3>💡 Info Ekstra (Modul Kontrol Panel)</h3>
+        <p>Aplikasi <strong>Webmin</strong> dan <strong>Usermin</strong> sudah tersedia di dalam repositori lokal ini. Kalian cukup mengetikkan perintah berikut untuk menginstalnya (disarankan dipisah):</p>
+        <pre><code>apt install webmin
+apt install usermin</code></pre>
     </div>
 </body>
 </html>
