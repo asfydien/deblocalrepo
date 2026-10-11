@@ -1,16 +1,16 @@
 ## Tujuan
 
-Idenya script ini digunakan untuk membuat sebuah CT Debian 12 di Proxmox supaya dapat digunakan sebagai repositori lokal dalam jaringan LAN, belum teruji sepenuhnya mungkin masih ada masalah dependensi!
+Idenya script ini digunakan untuk membuat sebuah CT Debian 13 di Proxmox supaya dapat digunakan sebagai repositori lokal dalam jaringan LAN, belum teruji sepenuhnya mungkin masih ada masalah dependensi!
 
 ## Tahapan
 
-1. Buat sebuah CT dengan template OS Debian
+1. Buat sebuah CT dengan template OS Debian 13 dan sudah terpasang Nginx
 2. Download script, lalu beri ijin eksekusi
     ```shell
-    wget https://raw.githubusercontent.com/asfydien/deblocalrepo/refs/heads/main/repo.sh
+    wget https://raw.githubusercontent.com/asfydien/deblocalrepo/refs/heads/main/repo-deb13.sh
     chmod +x repo.sh
     ```
 3. Jalankan
     ```shell
-    ./repo.sh
+    ./repo-deb13.sh
     ```  
